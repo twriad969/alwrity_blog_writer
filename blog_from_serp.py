@@ -3,50 +3,6 @@ import os
 import streamlit as st
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 import google.generativeai as genai
-from queue import Queue, Empty
-from threading import Thread, Lock
-
-# Constants
-MAX_REQUESTS_PER_MINUTE = 10
-REQUEST_INTERVAL = 60 / MAX_REQUESTS_PER_MINUTE  # Time to wait between requests
-
-# Global variables to track requests
-request_queue = Queue()
-processed_requests = 0
-request_lock = Lock()
-
-# Function to process the queue
-def process_queue():
-    global processed_requests
-    while True:
-        try:
-            # Get the next request from the queue
-            task = request_queue.get(timeout=1)
-            if task:
-                with request_lock:
-                    # Check if the request limit is reached
-                    if processed_requests >= MAX_REQUESTS_PER_MINUTE:
-                        # Wait for the next minute window
-                        st.warning("Rate limit reached. Waiting for 60 seconds to resume pending tasks.")
-                        time.sleep(60)
-                        processed_requests = 0  # Reset counter after the wait
-
-                    # Process the request
-                    task['result'].append(generate_text_with_exception_handling(task['prompt']))
-
-                    # Increment the processed requests count
-                    processed_requests += 1
-
-                    # Wait for the defined interval before the next request
-                    time.sleep(REQUEST_INTERVAL)
-
-            request_queue.task_done()
-
-        except Empty:
-            continue
-
-# Start the background queue processing thread
-Thread(target=process_queue, daemon=True).start()
 
 def main():
     # Set page configuration
@@ -110,97 +66,81 @@ def main():
 # Function to orchestrate the multi-stage blog generation
 def generate_full_blog(input_blog_keywords, input_type, input_tone, input_language):
     # Step 1: Generate the blog title
-    title_result = []
-    request_queue.put({'prompt': generate_title_prompt(input_blog_keywords, input_type, input_language), 'result': title_result})
-    request_queue.join()  # Wait until task is completed
-    title = title_result[0]
-    
+    title = generate_blog_title(input_blog_keywords, input_type, input_language)
     st.subheader('**Blog Title**')
     st.write(title)
 
     # Step 2: Generate introduction
-    intro_result = []
-    request_queue.put({'prompt': generate_introduction_prompt(title, input_language), 'result': intro_result})
-    request_queue.join()
-    introduction = intro_result[0]
-    
+    introduction = generate_introduction(title, input_language)
     st.subheader('**Introduction**')
     st.write(introduction)
 
     # Step 3: Generate the headings
-    headings_result = []
-    request_queue.put({'prompt': generate_headings_prompt(title, input_language), 'result': headings_result})
-    request_queue.join()
-    headings = headings_result[0].split("\n")
-    headings = [heading.strip() for heading in headings if heading.strip()]
+    headings = generate_blog_headings(title, input_language)
 
-    # Step 4: Generate content for each heading in multiple parts and refine
+    # Step 4: Generate content for each heading
     st.subheader('**Content**')
     content_pieces = []
     for heading in headings:
-        content_result = []
-        request_queue.put({'prompt': generate_heading_content_prompt(heading, input_language, input_tone), 'result': content_result})
-        request_queue.join()
-        refined_content = refine_in_parts(content_result[0], input_language, input_tone, pieces=5)
-        content_pieces.append(f"### {heading}\n{refined_content}")
+        content = generate_content_for_heading(heading, input_language, input_tone)
+        # Directly ask for valuable content without mentioning refinement
+        true_content = generate_true_content(content, input_language, input_tone)
+        content_pieces.append(f"### {heading}\n{true_content}")
     
     # Step 5: Combine and display the final content
     final_content = "\n\n".join(content_pieces)
     st.write(final_content)
 
-    # Step 6: Add table after content if requested
+    # Step 6: Optional table section based on user input
     if st.checkbox('Add a Table Section?'):
         table_content = st.text_area("Enter table content in markdown format (headers separated by '|'):")
         if table_content:
             st.subheader('**Table Section**')
             st.markdown(table_content)
 
-    # Step 7: Generate FAQs in correct format
-    faqs_result = []
-    request_queue.put({'prompt': generate_faqs_prompt(input_blog_keywords, input_language), 'result': faqs_result})
-    request_queue.join()
-    faqs = faqs_result[0].split("\n")
+    # Step 7: Generate FAQs
+    faqs = generate_faqs(input_blog_keywords, input_language)
     st.subheader('**FAQs**')
     for faq in faqs:
-        if ":" in faq:
-            question, answer = faq.split(":", 1)
-            st.write(f"**Q:** {question.strip()}\n**A:** {answer.strip()}")
+        st.write(f"**Q:** {faq['question']}\n**A:** {faq['answer']}")
 
-# Generate prompts
-def generate_title_prompt(keywords, blog_type, language):
-    return f"Generate a creative and captivating {language} blog title using these keywords: {keywords}. The blog type is {blog_type}."
+# Generate introduction
+def generate_introduction(title, language):
+    prompt = f"Write a natural and engaging introduction for a blog titled '{title}' in {language}. Make it exciting and offer an enticing overview of the blog post."
+    return generate_text_with_exception_handling(prompt)
 
-def generate_introduction_prompt(title, language):
-    return f"Write a catchy and engaging introduction for a blog titled '{title}' in {language}. Ensure the introduction naturally hooks the reader and provides an exciting preview of the blog content."
+# Generate the blog title
+def generate_blog_title(keywords, blog_type, language):
+    prompt = f"Create a single, compelling, and unique {language} blog title using these keywords: {keywords}. The blog type is {blog_type}. Ensure it captures the reader's interest."
+    return generate_text_with_exception_handling(prompt)
 
-def generate_headings_prompt(title, language):
-    return f"Generate 5 clear, SEO-optimized headings for a blog titled '{title}' in {language}. The headings should be informative and engaging."
+# Generate blog headings
+def generate_blog_headings(title, language):
+    prompt = f"Create 5 SEO-optimized, clear, and valuable headings for a blog titled '{title}' in {language}. They should be helpful and easy to understand."
+    headings = generate_text_with_exception_handling(prompt).split("\n")
+    return [heading.strip() for heading in headings if heading.strip()]
 
-def generate_heading_content_prompt(heading, language, tone):
-    return f"Write high-quality, informative content for the heading '{heading}' in {language}. Use a {tone} tone and ensure the content is valuable, with practical insights and tips."
+# Generate content for each heading
+def generate_content_for_heading(heading, language, tone):
+    prompt = f"Write informative and engaging content for the heading '{heading}' in {language}. Keep the tone {tone}, and focus on providing valuable insights without repetitive phrases."
+    return generate_text_with_exception_handling(prompt)
 
-def generate_faqs_prompt(keywords, language):
-    return f"Generate 5 frequently asked questions (FAQs) along with detailed answers for the topic based on the keywords '{keywords}' in {language}. Ensure the questions are informative and the answers are helpful."
+# Ask for true content without robotic phrasing
+def generate_true_content(content, language, tone):
+    prompt = f"Refine the following content to sound natural and engaging. Remove any robotic or mechanical phrasing and ensure the text reads smoothly:\n\n{content}"
+    return generate_text_with_exception_handling(prompt)
 
-# Refine content in smaller parts
-def refine_in_parts(content, language, tone, pieces=5):
-    content_chunks = split_content_into_chunks(content, pieces)
-    refined_chunks = []
-    
-    for chunk in content_chunks:
-        prompt = f"Refine the following text to make it sound natural, engaging, and free of repetitive or robotic phrases. Ensure the tone is {tone}:\n\n{chunk}"
-        chunk_result = []
-        request_queue.put({'prompt': prompt, 'result': chunk_result})
-        request_queue.join()
-        refined_chunks.append(chunk_result[0])
-    
-    return "\n\n".join(refined_chunks)
-
-# Split content into chunks
-def split_content_into_chunks(content, pieces):
-    words = content.split()
-    chunk_size = max(1, len(words) // pieces)
-    return [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+# Generate FAQs
+def generate_faqs(keywords, language):
+    prompt = f"Create 5 FAQs with detailed answers related to the keywords '{keywords}' in {language}. Ensure the questions are relevant and helpful."
+    faq_text = generate_text_with_exception_handling(prompt)
+    faq_lines = faq_text.split("\n")
+    faqs = []
+    for line in faq_lines:
+        if ":" in line:
+            question, answer = line.split(":", 1)
+            faqs.append({"question": question.strip(), "answer": answer.strip()})
+    return faqs
 
 # Exception handling for text generation
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
@@ -214,6 +154,7 @@ def generate_text_with_exception_handling(prompt):
     except Exception as e:
         st.exception(f"An unexpected error occurred: {e}")
         return None
+
 
 if __name__ == "__main__":
     main()
