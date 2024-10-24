@@ -100,8 +100,8 @@ def main():
     st.set_page_config(page_title="Alwrity - AI Blog Generator", layout="wide")
 
     # Title and description
-    st.title("✍️ Alwrity - 7-Part AI Blog Post Generator")
-    st.markdown("Create a human-friendly, SEO-optimized blog post in 7 parts (Intro, Main Content in 3 Parts, Table, FAQs, Conclusion) with natural, easy-to-read transitions.")
+    st.title("gemwriter - 7-Part AI Blog Post Generator")
+    st.markdown("Create a human-friendly, SEO-optimized blog post in 7 parts (Intro, Main Content in 3 Parts, Table, FAQs, Conclusion) with natural, easy-to-read transitions. proudly open source via ronok")
 
     # Blog topic input
     blog_topic = st.text_input("Enter the main topic of your blog:")
