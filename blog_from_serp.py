@@ -83,11 +83,17 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
     
     # Step 3: Generate content for each heading
     st.subheader('**Content**')
+    content_pieces = []
     for heading in headings:
         content = generate_content_for_heading(heading, input_language, input_tone)
-        st.write(f"### {heading}\n{content}")
+        refined_content = refine_content(content, input_language, input_tone)
+        content_pieces.append(f"### {heading}\n{refined_content}")
     
-    # Step 4: Generate FAQs
+    # Step 4: Combine and display the refined content
+    final_content = "\n\n".join(content_pieces)
+    st.write(final_content)
+
+    # Step 5: Generate FAQs
     faqs = generate_faqs(input_blog_keywords, input_language)
     st.subheader('**FAQs**')
     for faq in faqs:
@@ -96,26 +102,40 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
 
 # Step 1: Generate the blog title
 def generate_blog_title(keywords, blog_type, language):
-    prompt = f"Generate an engaging {language} blog title based on the following keywords: {keywords}. The blog type is {blog_type}."
+    prompt = f"Generate a single engaging and natural-sounding {language} blog title based on the following keywords: {keywords}. The blog type is {blog_type}. The title should be catchy and human-readable, without sounding robotic."
     return generate_text_with_exception_handling(prompt)
 
 
 # Step 2: Generate blog headings
 def generate_blog_headings(title, language):
-    prompt = f"Generate 5 detailed, SEO-optimized headings for a blog titled '{title}' in {language}."
-    return generate_text_with_exception_handling(prompt).split("\n")
+    prompt = f"Generate exactly 5 detailed, SEO-optimized headings for a blog titled '{title}' in {language}. These headings should be clear, concise, and valuable, without any generic or repetitive text."
+    headings = generate_text_with_exception_handling(prompt).split("\n")
+    return [heading.strip() for heading in headings if heading.strip()]
 
 
 # Step 3: Generate content for each heading
 def generate_content_for_heading(heading, language, tone):
-    prompt = f"Write detailed content for the heading '{heading}' in {language}. The tone should be {tone}. Include SEO keywords and make the content engaging."
+    prompt = f"Write high-quality content for the heading '{heading}' in {language}. The tone should be {tone}. Avoid robotic or repetitive phrases, and ensure the content is valuable, well-researched, and engaging for the reader."
     return generate_text_with_exception_handling(prompt)
 
 
-# Step 4: Generate FAQs
+# Step 4: Refine content to remove robotic text
+def refine_content(content, language, tone):
+    prompt = f"Refine the following content to remove any robotic-sounding text, making it more human-like, valuable, and engaging. Ensure the tone is {tone} and maintain a natural flow:\n\n{content}"
+    return generate_text_with_exception_handling(prompt)
+
+
+# Step 5: Generate FAQs
 def generate_faqs(keywords, language):
-    prompt = f"Generate 5 frequently asked questions (FAQs) with answers based on the keywords '{keywords}' in {language}."
-    return [{"question": q.split(":")[0], "answer": q.split(":")[1]} for q in generate_text_with_exception_handling(prompt).split("\n")]
+    prompt = f"Generate 5 frequently asked questions (FAQs) with detailed answers based on the keywords '{keywords}' in {language}. Make sure the questions and answers are natural-sounding and provide useful information, without sounding robotic."
+    faq_text = generate_text_with_exception_handling(prompt)
+    faq_lines = faq_text.split("\n")
+    faqs = []
+    for line in faq_lines:
+        if ":" in line:
+            question, answer = line.split(":", 1)
+            faqs.append({"question": question.strip(), "answer": answer.strip()})
+    return faqs
 
 
 # Exception handling for text generation
