@@ -113,7 +113,12 @@ def generate_text_with_exception_handling(prompt):
         model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest", generation_config={"max_output_tokens": 8192})
         convo = model.start_chat(history=[])
         response = convo.send_message(prompt)
-        return response.last.text
+        
+        # Extract text from the response
+        if response and response.candidates:
+            return response.candidates[0]['output']
+        else:
+            return None
     except Exception as e:
         st.exception(f"An unexpected error occurred: {e}")
         return None
