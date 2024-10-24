@@ -107,38 +107,38 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
 
 # Generate introduction
 def generate_introduction(title, language):
-    prompt = f"Write an engaging introduction for a blog titled '{title}' in {language}. The introduction should hook the reader and give an overview of what the blog post will cover."
+    prompt = f"Write an engaging introduction for a blog titled '{title}' in {language}. The introduction should hook the reader and give an overview of what the blog post will cover. send the content only dont send any robotic texts"
     return generate_text_with_exception_handling(prompt)
 
 
 # Generate the blog title
 def generate_blog_title(keywords, blog_type, language):
-    prompt = f"Generate a single engaging and natural-sounding {language} blog title based on the following keywords: {keywords}. The blog type is {blog_type}."
+    prompt = f"Generate a single engaging and natural-sounding {language} blog title based on the following keywords: {keywords}. The blog type is {blog_type}. send the content only dont send any robotic texts"
     return generate_text_with_exception_handling(prompt)
 
 
 # Generate blog headings
 def generate_blog_headings(title, language):
-    prompt = f"Generate 5 detailed, SEO-optimized headings for a blog titled '{title}' in {language}. These headings should be clear and concise."
+    prompt = f"Generate 5 detailed, SEO-optimized headings for a blog titled '{title}' in {language}. These headings should be clear and concise. send the content only dont send any robotic texts"
     headings = generate_text_with_exception_handling(prompt).split("\n")
     return [heading.strip() for heading in headings if heading.strip()]
 
 
 # Generate content for each heading
 def generate_content_for_heading(heading, language, tone):
-    prompt = f"Write high-quality content for the heading '{heading}' in {language}. The tone should be {tone}. Ensure the content is valuable and engaging."
+    prompt = f"Write high-quality content for the heading '{heading}' in {language}. The tone should be {tone}. Ensure the content is valuable and engaging. send the content only dont send any robotic texts"
     return generate_text_with_exception_handling(prompt)
 
 
 # Ask for true content without robotic phrasing
 def generate_true_content(content, language, tone):
-    prompt = f"Provide valuable content for the following text, ensuring it is engaging and natural. Remove any robotic or repetitive phrases:\n\n{content}"
+    prompt = f"Provide valuable content for the following text, ensuring it is engaging and natural. Remove any robotic or repetitive phrases:\n\n{content} and send the content only dont send any robotic texts"
     return generate_text_with_exception_handling(prompt)
 
 
 # Generate FAQs
 def generate_faqs(keywords, language):
-    prompt = f"Generate 5 frequently asked questions (FAQs) with detailed answers based on the keywords '{keywords}' in {language}."
+    prompt = f"Generate 5 frequently asked questions (FAQs) with detailed answers based on the keywords '{keywords}' in {language}. send faqs only"
     faq_text = generate_text_with_exception_handling(prompt)
     faq_lines = faq_text.split("\n")
     faqs = []
