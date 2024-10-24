@@ -9,18 +9,20 @@ def configure_gemini():
     return genai.GenerativeModel(model_name="gemini-1.5-flash-latest", generation_config={"max_output_tokens": 2048})
 
 
-# Initialize the conversation and store blog parts
+# Initialize the conversation and blog storage
 def initiate_conversation():
     if 'convo' not in st.session_state:
         model = configure_gemini()
         st.session_state['convo'] = model.start_chat(history=[])
+        # Initialize the blog content storage
         st.session_state['blog_content'] = {
             'intro': None,
             'body': None,
             'faqs': None,
             'conclusion': None
         }
-        st.session_state['current_part'] = 'intro'  # Start with the introduction
+        # Set the current part to 'intro' to start generating the introduction
+        st.session_state['current_part'] = 'intro'
 
 
 # Function to generate each section of the blog naturally
@@ -114,7 +116,7 @@ def main():
             initiate_conversation()
             st.success('Blog generation started! Let\'s begin with the introduction.')
 
-        # Generate each part of the blog based on the state
+        # Generate each part of the blog based on the state and show it directly
         if 'convo' in st.session_state and st.session_state['current_part'] != 'complete':
             current_part = st.session_state['current_part']
             if current_part == 'intro':
