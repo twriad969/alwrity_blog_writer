@@ -23,7 +23,7 @@ def main():
     </style>""", unsafe_allow_html=True)
 
     # Title and description
-    st.title("✍️ Alwrity - AI Blog Post Generator")
+    st.title("Alwrity - AI Blog Post Generator")
     st.markdown("Create high-quality blog content effortlessly with our AI-powered tool. Ideal for bloggers and content creators. 🚀")
 
     # Input section
