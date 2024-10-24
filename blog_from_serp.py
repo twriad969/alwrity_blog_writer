@@ -23,7 +23,7 @@ def main():
     </style>""", unsafe_allow_html=True)
 
     # Title and description
-    st.title("✍️ Orbi - AI Blog Post Generator")
+    st.title("✍️ Alwrity - AI Blog Post Generator")
     st.markdown("Create high-quality blog content effortlessly with our AI-powered tool. Ideal for bloggers and content creators. 🚀")
 
     # Input section
@@ -83,10 +83,11 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
     content_pieces = []
     for heading in headings:
         content = generate_content_for_heading(heading, input_language, input_tone)
-        refined_content = refine_content(content, input_language, input_tone)
-        content_pieces.append(f"### {heading}\n{refined_content}")
+        # Directly ask for valuable content without mentioning refinement
+        true_content = generate_true_content(content, input_language, input_tone)
+        content_pieces.append(f"### {heading}\n{true_content}")
     
-    # Step 5: Combine and display the refined content
+    # Step 5: Combine and display the final content
     final_content = "\n\n".join(content_pieces)
     st.write(final_content)
 
@@ -103,41 +104,35 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
     for faq in faqs:
         st.write(f"**Q:** {faq['question']}\n**A:** {faq['answer']}")
 
-
 # Generate introduction
 def generate_introduction(title, language):
-    prompt = f"Write an engaging introduction for a blog titled '{title}' in {language}. The introduction should hook the reader and give an overview of what the blog post will cover."
+    prompt = f"Write a natural and engaging introduction for a blog titled '{title}' in {language}. Make it exciting and offer an enticing overview of the blog post."
     return generate_text_with_exception_handling(prompt)
-
 
 # Generate the blog title
 def generate_blog_title(keywords, blog_type, language):
-    prompt = f"Generate a single engaging and natural-sounding {language} blog title based on the following keywords: {keywords}. The blog type is {blog_type}."
+    prompt = f"Create a single, compelling, and unique {language} blog title using these keywords: {keywords}. The blog type is {blog_type}. Ensure it captures the reader's interest."
     return generate_text_with_exception_handling(prompt)
-
 
 # Generate blog headings
 def generate_blog_headings(title, language):
-    prompt = f"Generate 5 detailed, SEO-optimized headings for a blog titled '{title}' in {language}. These headings should be clear and concise."
+    prompt = f"Create 5 SEO-optimized, clear, and valuable headings for a blog titled '{title}' in {language}. They should be helpful and easy to understand."
     headings = generate_text_with_exception_handling(prompt).split("\n")
     return [heading.strip() for heading in headings if heading.strip()]
 
-
 # Generate content for each heading
 def generate_content_for_heading(heading, language, tone):
-    prompt = f"Write high-quality content for the heading '{heading}' in {language}. The tone should be {tone}. Ensure the content is valuable and engaging."
+    prompt = f"Write informative and engaging content for the heading '{heading}' in {language}. Keep the tone {tone}, and focus on providing valuable insights without repetitive phrases."
     return generate_text_with_exception_handling(prompt)
 
-
-# Refine content to remove robotic text
-def refine_content(content, language, tone):
-    prompt = f"Refine the following content to make it more human-like and engaging, maintaining a natural flow:\n\n{content}"
+# Ask for true content without robotic phrasing
+def generate_true_content(content, language, tone):
+    prompt = f"Refine the following content to sound natural and engaging. Remove any robotic or mechanical phrasing and ensure the text reads smoothly:\n\n{content}"
     return generate_text_with_exception_handling(prompt)
-
 
 # Generate FAQs
 def generate_faqs(keywords, language):
-    prompt = f"Generate 5 frequently asked questions (FAQs) with detailed answers based on the keywords '{keywords}' in {language}."
+    prompt = f"Create 5 FAQs with detailed answers related to the keywords '{keywords}' in {language}. Ensure the questions are relevant and helpful."
     faq_text = generate_text_with_exception_handling(prompt)
     faq_lines = faq_text.split("\n")
     faqs = []
@@ -146,7 +141,6 @@ def generate_faqs(keywords, language):
             question, answer = line.split(":", 1)
             faqs.append({"question": question.strip(), "answer": answer.strip()})
     return faqs
-
 
 # Exception handling for text generation
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
