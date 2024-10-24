@@ -9,7 +9,7 @@ from exa_py import Exa
 def main():
     # Set page configuration
     st.set_page_config(page_title="Alwrity - AI Blog Writer", layout="wide")
-    
+
     # Apply custom CSS for styling and scrollbar
     st.markdown("""
         <style>
@@ -62,61 +62,60 @@ def main():
         # Generate Blog FAQ button
         if st.button('**Write Blog Post ✍️**'):
             with st.spinner('Generating your blog post...'):
-                # Input validation
                 if not input_blog_keywords:
                     st.error('**🫣 Provide Inputs to generate Blog Post. Keywords are required!**')
                 else:
-                    blog_post = generate_blog_post(input_blog_keywords, blog_type, input_blog_tone, input_blog_language)
-                    if blog_post:
-                        st.subheader('**🧕🔬👩 Your Final Blog Post!**')
-                        st.write(blog_post)
-                    else:
-                        st.error("💥 **Failed to generate blog post. Please try again!**")
+                    generate_full_blog(input_blog_keywords, blog_type, input_blog_tone, input_blog_language)
 
 
-# Function to generate the blog post using the LLM
-def generate_blog_post(input_blog_keywords, input_type, input_tone, input_language):
-    serp_results = None
-    try:
-        serp_results = metaphor_search_articles(input_blog_keywords)
-    except Exception as err:
-        st.error(f"❌ Failed to retrieve search results for {input_blog_keywords}: {err}")
+# Function to orchestrate the multi-stage blog generation
+def generate_full_blog(input_blog_keywords, input_type, input_tone, input_language):
+    # Step 1: Generate the blog title
+    title = generate_blog_title(input_blog_keywords, input_type, input_language)
+    st.subheader('**Blog Title**')
+    st.write(title)
+
+    # Step 2: Generate the headings
+    headings = generate_blog_headings(title, input_language)
+    st.subheader('**Headings**')
+    for i, heading in enumerate(headings, 1):
+        st.write(f"{i}. {heading}")
     
-    if serp_results:
-        prompt = f"""
-        You are Alwrity, an SEO expert & {input_language} Creative Content writer. 
-        You specialize in writing {input_type} blog posts.
-        Write a detailed, informative, and SEO-optimized blog post using the following web research keywords and Google search results.
-        
-        Ensure that:
-        1. The blog content competes against existing blogs in the search results.
-        2. You include 5 FAQs based on 'People also ask' and related queries from the search results, with answers.
-        3. The blog is formatted in markdown and follows the {input_tone} tone.
-        4. Include personal insights and make the content engaging.
-        5. Your final response should be highly readable and demostrate Experience, Expertise, Authoritativeness, and Trustworthiness.
-        6. Maintain blog tone of type {input_tone}, attitude and mood of your blog, conveyed through sentence formations, phrase types, and word choices.
-
-        Blog keywords: {input_blog_keywords}
-        Google SERP results: {serp_results}
-        """
-        return generate_text_with_exception_handling(prompt)
-    return None
-
-
-# Metaphor search function
-def metaphor_search_articles(query):
-    METAPHOR_API_KEY = os.getenv('METAPHOR_API_KEY')
-    if not METAPHOR_API_KEY:
-        raise ValueError("METAPHOR_API_KEY environment variable not set!")
-
-    metaphor = Exa(METAPHOR_API_KEY)
+    # Step 3: Generate content for each heading
+    st.subheader('**Content**')
+    for heading in headings:
+        content = generate_content_for_heading(heading, input_language, input_tone)
+        st.write(f"### {heading}\n{content}")
     
-    try:
-        search_response = metaphor.search_and_contents(query, use_autoprompt=True, num_results=5)
-        return search_response.results
-    except Exception as err:
-        st.error(f"Failed in metaphor.search_and_contents: {err}")
-        return None
+    # Step 4: Generate FAQs
+    faqs = generate_faqs(input_blog_keywords, input_language)
+    st.subheader('**FAQs**')
+    for faq in faqs:
+        st.write(f"**Q:** {faq['question']}\n**A:** {faq['answer']}")
+
+
+# Step 1: Generate the blog title
+def generate_blog_title(keywords, blog_type, language):
+    prompt = f"Generate an engaging {language} blog title based on the following keywords: {keywords}. The blog type is {blog_type}."
+    return generate_text_with_exception_handling(prompt)
+
+
+# Step 2: Generate blog headings
+def generate_blog_headings(title, language):
+    prompt = f"Generate 5 detailed, SEO-optimized headings for a blog titled '{title}' in {language}."
+    return generate_text_with_exception_handling(prompt).split("\n")
+
+
+# Step 3: Generate content for each heading
+def generate_content_for_heading(heading, language, tone):
+    prompt = f"Write detailed content for the heading '{heading}' in {language}. The tone should be {tone}. Include SEO keywords and make the content engaging."
+    return generate_text_with_exception_handling(prompt)
+
+
+# Step 4: Generate FAQs
+def generate_faqs(keywords, language):
+    prompt = f"Generate 5 frequently asked questions (FAQs) with answers based on the keywords '{keywords}' in {language}."
+    return [{"question": q.split(":")[0], "answer": q.split(":")[1]} for q in generate_text_with_exception_handling(prompt).split("\n")]
 
 
 # Exception handling for text generation
@@ -135,4 +134,3 @@ def generate_text_with_exception_handling(prompt):
 
 if __name__ == "__main__":
     main()
-
