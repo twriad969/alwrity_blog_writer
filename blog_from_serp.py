@@ -5,12 +5,8 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 import google.generativeai as genai
 from exa_py import Exa
 
-# Initialize conversation state
-if 'conversation' not in st.session_state:
-    st.session_state['conversation'] = None
-if 'blog_content' not in st.session_state:
-    st.session_state['blog_content'] = ""  # Store the generated blog content
-
+# To store conversation history
+conversation_history = []
 
 def main():
     # Set page configuration
@@ -65,70 +61,48 @@ def main():
             if input_blog_language == 'Customize':
                 input_blog_language = st.text_input("**Enter your custom language**", help="Provide a custom language if you chose 'Customize'.")
 
-        # Display the blog generation process in parts
-        if st.button('**Generate Part 1**'):
+        # Generate Blog FAQ button
+        if st.button('**Write Blog Post (Part 1: Introduction) ✍️**'):
             with st.spinner('Generating the first part of your blog post...'):
                 if not input_blog_keywords:
                     st.error('**🫣 Provide Inputs to generate Blog Post. Keywords are required!**')
                 else:
-                    generate_blog_post(input_blog_keywords, blog_type, input_blog_tone, input_blog_language, part="part_1")
-                    st.write(st.session_state['blog_content'])
+                    generate_blog_in_parts(input_blog_keywords, blog_type, input_blog_tone, input_blog_language, part='introduction')
 
-        if st.button('**Generate Part 2**'):
+        # Button for part 2 (body)
+        if st.button('**Write Blog Post (Part 2: Body) ✍️**'):
             with st.spinner('Generating the second part of your blog post...'):
-                generate_blog_post(input_blog_keywords, blog_type, input_blog_tone, input_blog_language, part="part_2")
-                st.write(st.session_state['blog_content'])
+                generate_blog_in_parts(input_blog_keywords, blog_type, input_blog_tone, input_blog_language, part='body')
 
-        if st.button('**Generate Part 3**'):
-            with st.spinner('Generating the final part of your blog post...'):
-                generate_blog_post(input_blog_keywords, blog_type, input_blog_tone, input_blog_language, part="part_3")
-                st.write(st.session_state['blog_content'])
+        # Button for part 3 (conclusion)
+        if st.button('**Write Blog Post (Part 3: Conclusion) ✍️**'):
+            with st.spinner('Generating the third part of your blog post...'):
+                generate_blog_in_parts(input_blog_keywords, blog_type, input_blog_tone, input_blog_language, part='conclusion')
 
 
-# Function to generate the blog post using the LLM in parts
-def generate_blog_post(input_blog_keywords, input_type, input_tone, input_language, part):
-    serp_results = None
-    try:
-        serp_results = metaphor_search_articles(input_blog_keywords)
-    except Exception as err:
-        st.error(f"❌ Failed to retrieve search results for {input_blog_keywords}: {err}")
+# Function to generate the blog post in parts using the LLM
+def generate_blog_in_parts(input_blog_keywords, input_type, input_tone, input_language, part):
+    global conversation_history  # To keep track of history
+
+    # Customize the prompt based on the part
+    prompt = f"""
+    You are Alwrity, an SEO expert & {input_language} Creative Content writer.
+    You specialize in writing {input_type} blog posts.
+    Please write the {part} of the blog post based on the following keywords and ensure SEO-optimization.
     
-    if serp_results:
-        prompt = f"""
-        You are Alwrity, an SEO expert & {input_language} Creative Content writer. 
-        You specialize in writing {input_type} blog posts.
-        Write the {part} of a detailed, informative, and SEO-optimized blog post using the following web research keywords and Google search results.
-        
-        Ensure that:
-        1. The blog content competes against existing blogs in the search results.
-        2. Include personal insights and make the content engaging.
-        3. Maintain the tone of type {input_tone}.
-        
-        Previous blog content: {st.session_state['blog_content']}
-        Blog keywords: {input_blog_keywords}
-        Google SERP results: {serp_results}
-        """
-        
-        # Generate text for the specified part
-        new_content = generate_text_with_exception_handling(prompt)
-        if new_content:
-            st.session_state['blog_content'] += f"\n\n{new_content}"
-
-
-# Metaphor search function
-def metaphor_search_articles(query):
-    METAPHOR_API_KEY = os.getenv('METAPHOR_API_KEY')
-    if not METAPHOR_API_KEY:
-        raise ValueError("METAPHOR_API_KEY environment variable not set!")
-
-    metaphor = Exa(METAPHOR_API_KEY)
+    Blog keywords: {input_blog_keywords}
     
-    try:
-        search_response = metaphor.search_and_contents(query, use_autoprompt=True, num_results=5)
-        return search_response.results
-    except Exception as err:
-        st.error(f"Failed in metaphor.search_and_contents: {err}")
-        return None
+    Please continue from the last part written:
+    {''.join(conversation_history)}  # Add previous conversation for context
+    """
+    
+    # Generate the next part of the blog
+    new_text = generate_text_with_exception_handling(prompt)
+    if new_text:
+        conversation_history.append(new_text)  # Update the history
+        st.write(new_text)
+    else:
+        st.error("💥 **Failed to generate blog post. Please try again!**")
 
 
 # Exception handling for text generation
@@ -137,13 +111,9 @@ def generate_text_with_exception_handling(prompt):
     try:
         genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
         model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest", generation_config={"max_output_tokens": 8192})
-        convo = st.session_state['conversation'] or model.start_chat(history=[])
-        convo.send_message(prompt)
-        
-        # Save conversation state
-        st.session_state['conversation'] = convo
-        
-        return convo.last.text
+        convo = model.start_chat(history=[])
+        response = convo.send_message(prompt)
+        return response.last.text
     except Exception as e:
         st.exception(f"An unexpected error occurred: {e}")
         return None
