@@ -78,27 +78,26 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
     # Step 3: Generate the headings
     headings = generate_blog_headings(title, input_language)
 
-    # Step 4: Generate content for each heading
+    # Step 4: Generate content for each heading in multiple parts and refine
     st.subheader('**Content**')
     content_pieces = []
     for heading in headings:
         content = generate_content_for_heading(heading, input_language, input_tone)
-        # Directly ask for valuable content without mentioning refinement
-        true_content = generate_true_content(content, input_language, input_tone)
-        content_pieces.append(f"### {heading}\n{true_content}")
+        refined_content = refine_in_parts(content, input_language, input_tone, pieces=5)  # Split and refine in 5 parts
+        content_pieces.append(f"### {heading}\n{refined_content}")
     
     # Step 5: Combine and display the final content
     final_content = "\n\n".join(content_pieces)
     st.write(final_content)
 
-    # Step 6: Optional table section based on user input
+    # Step 6: Add table after content if requested
     if st.checkbox('Add a Table Section?'):
         table_content = st.text_area("Enter table content in markdown format (headers separated by '|'):")
         if table_content:
             st.subheader('**Table Section**')
             st.markdown(table_content)
 
-    # Step 7: Generate FAQs
+    # Step 7: Generate FAQs in correct format
     faqs = generate_faqs(input_blog_keywords, input_language)
     st.subheader('**FAQs**')
     for faq in faqs:
@@ -106,33 +105,46 @@ def generate_full_blog(input_blog_keywords, input_type, input_tone, input_langua
 
 # Generate introduction
 def generate_introduction(title, language):
-    prompt = f"Write a natural and engaging introduction for a blog titled '{title}' in {language}. Make it exciting and offer an enticing overview of the blog post."
+    prompt = f"Write a catchy and engaging introduction for a blog titled '{title}' in {language}. Ensure the introduction naturally hooks the reader and provides an exciting preview of the blog content."
     return generate_text_with_exception_handling(prompt)
 
 # Generate the blog title
 def generate_blog_title(keywords, blog_type, language):
-    prompt = f"Create a single, compelling, and unique {language} blog title using these keywords: {keywords}. The blog type is {blog_type}. Ensure it captures the reader's interest."
+    prompt = f"Generate a creative and captivating {language} blog title that uses the following keywords: {keywords}. The blog type is {blog_type}. Ensure the title feels natural and attention-grabbing."
     return generate_text_with_exception_handling(prompt)
 
 # Generate blog headings
 def generate_blog_headings(title, language):
-    prompt = f"Create 5 SEO-optimized, clear, and valuable headings for a blog titled '{title}' in {language}. They should be helpful and easy to understand."
+    prompt = f"Generate 5 clear, SEO-optimized headings for a blog titled '{title}' in {language}. The headings should be informative and engaging, giving readers a solid structure to follow."
     headings = generate_text_with_exception_handling(prompt).split("\n")
     return [heading.strip() for heading in headings if heading.strip()]
 
 # Generate content for each heading
 def generate_content_for_heading(heading, language, tone):
-    prompt = f"Write informative and engaging content for the heading '{heading}' in {language}. Keep the tone {tone}, and focus on providing valuable insights without repetitive phrases."
+    prompt = f"Write high-quality, informative content for the heading '{heading}' in {language}. Use a {tone} tone and ensure the content is valuable, with practical insights and tips."
     return generate_text_with_exception_handling(prompt)
 
-# Ask for true content without robotic phrasing
-def generate_true_content(content, language, tone):
-    prompt = f"Refine the following content to sound natural and engaging. Remove any robotic or mechanical phrasing and ensure the text reads smoothly:\n\n{content}"
-    return generate_text_with_exception_handling(prompt)
+# Refine the content in smaller parts to avoid robotic or repetitive phrasing
+def refine_in_parts(content, language, tone, pieces=5):
+    # Split content into smaller chunks for refinement
+    content_chunks = split_content_into_chunks(content, pieces)
+    refined_chunks = []
+    
+    for chunk in content_chunks:
+        prompt = f"Refine the following text to make it sound natural, engaging, and free of repetitive or robotic phrases. Ensure the tone is {tone}:\n\n{chunk}"
+        refined_chunks.append(generate_text_with_exception_handling(prompt))
+    
+    return "\n\n".join(refined_chunks)
 
-# Generate FAQs
+# Split the content into smaller chunks
+def split_content_into_chunks(content, pieces):
+    words = content.split()
+    chunk_size = max(1, len(words) // pieces)
+    return [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+
+# Generate FAQs in the correct format (without external formatting issues)
 def generate_faqs(keywords, language):
-    prompt = f"Create 5 FAQs with detailed answers related to the keywords '{keywords}' in {language}. Ensure the questions are relevant and helpful."
+    prompt = f"Generate 5 frequently asked questions (FAQs) along with detailed answers for the topic based on the keywords '{keywords}' in {language}. Ensure the questions are informative and the answers are helpful."
     faq_text = generate_text_with_exception_handling(prompt)
     faq_lines = faq_text.split("\n")
     faqs = []
