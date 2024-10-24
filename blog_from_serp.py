@@ -97,10 +97,10 @@ def generate_blog_section(blog_topic, blog_type, blog_tone, blog_language):
 # Main app function
 def main():
     # Page configuration
-    st.set_page_config(page_title="Alwrity - AI Blog Generator", layout="wide")
+    st.set_page_config(page_title="Glwrity - AI Blog Generator", layout="wide")
 
     # Title and description
-    st.title("gemwriter - 7-Part AI Blog Post Generator")
+    st.title("Gemwriter - 7-Part AI Blog Post Generator")
     st.markdown("Create a human-friendly, SEO-optimized blog post in 7 parts (Intro, Main Content in 3 Parts, Table, FAQs, Conclusion) with natural, easy-to-read transitions. proudly open source via ronok")
 
     # Blog topic input
