@@ -102,9 +102,13 @@ def main():
     
     with col1:
         blog_type = st.selectbox('Blog Post Type', ['General', 'How-to Guides', 'Listicles', 'Cheat Sheets', 'Job Posts'])
+        if blog_type == 'Customize':
+            blog_language = st.text_input("Enter your custom type:")
     
     with col2:
         blog_tone = st.selectbox('Blog Tone', ['Professional', 'Casual', 'Informative'])
+        if blog_tone == 'Customize':
+            blog_language = st.text_input("Enter your custom tone:")
     
     with col3:
         blog_language = st.selectbox('Language', ['English', 'Spanish', 'Chinese', 'Hindi', 'Vietnamese', 'Customize'])
