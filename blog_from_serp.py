@@ -23,50 +23,46 @@ def initialize_state():
         }
         st.session_state['current_part'] = 'intro'  # Start with the introduction
 
-# Function to generate each blog section
+# Function to generate each blog section with enhanced prompts
 def generate_blog_section(blog_topic, blog_type, blog_tone, blog_language):
     convo = st.session_state['convo']
     current_part = st.session_state['current_part']
     
-    # Define natural language prompts for each part
+    # Refined natural language prompts for each part
     if current_part == 'intro':
         prompt = f"""
-        You are a creative {blog_language} SEO expert and {blog_type} blog writer.
-        Please write a detailed and engaging **Introduction** for a blog post on the topic: {blog_topic}.
-        Ensure the introduction hooks the reader with valuable insights and introduces the topic in a conversational and human-like tone.
+        Write a captivating introduction for a {blog_language} blog post on the topic "{blog_topic}".
+        This intro should hook readers, briefly outline what they’ll learn, and be inviting in tone. Imagine you're talking directly to a curious reader who wants practical insights about this topic.
         """
     elif current_part == 'main_content_1':
         prompt = f"""
-        Let's start with the **first part of the main content** of the blog post on "{blog_topic}".
-        Provide detailed insights that cover important aspects of the topic in a way that's engaging, well-structured, and informative. Include relevant subheadings.
-        Keep the tone {blog_tone} and focus on making the content valuable and easy to understand.
+        Create the **first main section** for a blog on "{blog_topic}" in {blog_language}.
+        Start with a clear subheading, then explain a foundational aspect of the topic in a {blog_tone} way, sharing relevant details that build interest.
         """
     elif current_part == 'main_content_2':
         prompt = f"""
-        Now, move on to the **second part of the main content** for the blog post on "{blog_topic}".
-        Expand further on the topic, introducing new points or diving deeper into subtopics.
-        Maintain the same valuable and engaging tone to keep the reader's interest, and ensure it's informative and well-organized.
+        Continue with the **second main section** for the topic "{blog_topic}".
+        Introduce a new angle or important point, keeping the language conversational and easy to follow. Remember to make it engaging and informative.
         """
     elif current_part == 'main_content_3':
         prompt = f"""
-        Now, let's continue with the **third part of the main content** of the blog post on "{blog_topic}".
-        Continue exploring additional important aspects of the topic. Make sure the content is thorough and provides value to the reader.
-        Ensure this section contributes to the overall structure of the post, keeping the writing in a {blog_tone} tone.
+        Develop the **third section** of the main content for "{blog_topic}".
+        Offer additional insights or practical examples, ensuring this content flows naturally and aligns with the {blog_tone} style.
         """
     elif current_part == 'table':
         prompt = f"""
-        Now, create a **Table** summarizing key information related to the topic "{blog_topic}".
-        The table should highlight important details, comparisons, or statistics that add value to the blog. Keep it simple and easy to read for the audience.
+        Construct a simple, informative **table** summarizing key points about "{blog_topic}".
+        This table should be easy to read and enhance the blog’s structure, possibly featuring comparisons or essential statistics.
         """
     elif current_part == 'faqs':
         prompt = f"""
-        Let's now create a concise set of **Frequently Asked Questions (FAQs)** for the blog post on "{blog_topic}".
-        Provide 3 to 4 FAQs that are relevant and concise. Ensure the answers are short, clear, and to the point.
+        Write a set of **Frequently Asked Questions (FAQs)** for "{blog_topic}".
+        Provide concise answers to common questions a reader might have, in a {blog_tone} tone, with no more than 2-3 sentences per answer.
         """
     elif current_part == 'conclusion':
         prompt = f"""
-        Finally, write a **Conclusion** for the blog post on "{blog_topic}".
-        Summarize the key points discussed in the post, and provide a final takeaway or a call to action for the reader. Keep the tone friendly and engaging.
+        Craft a friendly and thoughtful **conclusion** for the blog on "{blog_topic}".
+        Summarize the main takeaways and offer a gentle call-to-action or final thought, leaving readers with something memorable.
         """
     
     # Send the prompt to the AI model
@@ -77,31 +73,27 @@ def generate_blog_section(blog_topic, blog_type, blog_tone, blog_language):
     st.session_state['blog_parts'][current_part] = response
 
     # Move to the next part
-    if current_part == 'intro':
-        st.session_state['current_part'] = 'main_content_1'
-    elif current_part == 'main_content_1':
-        st.session_state['current_part'] = 'main_content_2'
-    elif current_part == 'main_content_2':
-        st.session_state['current_part'] = 'main_content_3'
-    elif current_part == 'main_content_3':
-        st.session_state['current_part'] = 'table'
-    elif current_part == 'table':
-        st.session_state['current_part'] = 'faqs'
-    elif current_part == 'faqs':
-        st.session_state['current_part'] = 'conclusion'
-    elif current_part == 'conclusion':
-        st.session_state['current_part'] = 'complete'
+    next_parts = {
+        'intro': 'main_content_1',
+        'main_content_1': 'main_content_2',
+        'main_content_2': 'main_content_3',
+        'main_content_3': 'table',
+        'table': 'faqs',
+        'faqs': 'conclusion',
+        'conclusion': 'complete'
+    }
+    st.session_state['current_part'] = next_parts.get(current_part, 'complete')
 
     return response
 
 # Main app function
 def main():
     # Page configuration
-    st.set_page_config(page_title="Glwrity - AI Blog Generator", layout="wide")
+    st.set_page_config(page_title="Gemwriter - AI Blog Generator", layout="wide")
 
     # Title and description
     st.title("Gemwriter - 7-Part AI Blog Post Generator")
-    st.markdown("Create a human-friendly, SEO-optimized blog post in 7 parts (Intro, Main Content in 3 Parts, Table, FAQs, Conclusion) with natural, easy-to-read transitions. proudly open source via ronok")
+    st.markdown("Generate an engaging, SEO-friendly blog in 7 sections, designed to capture and hold reader interest. Proudly open-sourced by ronok.")
 
     # Blog topic input
     blog_topic = st.text_input("Enter the main topic of your blog:")
@@ -123,48 +115,27 @@ def main():
     if st.button('Start Blog Generation'):
         if blog_topic:
             initialize_state()
-            st.success('Blog generation started! Let\'s begin with the introduction.')
+            st.success('Blog generation started! Beginning with the introduction.')
 
     # Generate the blog sections step by step
     if 'convo' in st.session_state and st.session_state['current_part'] != 'complete':
         current_part = st.session_state['current_part']
         
-        # Dynamically change the button label based on the section being generated
-        if current_part == 'intro':
-            if st.button('Generate Blog Introduction'):
-                intro = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Introduction")
-                st.write(intro)
-        elif current_part == 'main_content_1':
-            if st.button('Generate Main Content (Part 1)'):
-                main_content_1 = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Main Content (Part 1)")
-                st.write(main_content_1)
-        elif current_part == 'main_content_2':
-            if st.button('Generate Main Content (Part 2)'):
-                main_content_2 = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Main Content (Part 2)")
-                st.write(main_content_2)
-        elif current_part == 'main_content_3':
-            if st.button('Generate Main Content (Part 3)'):
-                main_content_3 = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Main Content (Part 3)")
-                st.write(main_content_3)
-        elif current_part == 'table':
-            if st.button('Generate Table'):
-                table = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Table")
-                st.write(table)
-        elif current_part == 'faqs':
-            if st.button('Generate FAQs'):
-                faqs = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Frequently Asked Questions (FAQs)")
-                st.write(faqs)
-        elif current_part == 'conclusion':
-            if st.button('Generate Conclusion'):
-                conclusion = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
-                st.subheader("Conclusion")
-                st.write(conclusion)
+        # Dynamic button labels for each section
+        part_labels = {
+            'intro': 'Generate Blog Introduction',
+            'main_content_1': 'Generate Main Content (Part 1)',
+            'main_content_2': 'Generate Main Content (Part 2)',
+            'main_content_3': 'Generate Main Content (Part 3)',
+            'table': 'Generate Table',
+            'faqs': 'Generate FAQs',
+            'conclusion': 'Generate Conclusion'
+        }
+
+        if st.button(part_labels.get(current_part, "Next Section")):
+            part_content = generate_blog_section(blog_topic, blog_type, blog_tone, blog_language)
+            st.subheader(current_part.replace("_", " ").title())
+            st.write(part_content)
 
     # Show the complete blog post when all parts are done
     if st.session_state.get('current_part') == 'complete':
