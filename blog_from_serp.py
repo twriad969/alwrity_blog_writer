@@ -2,93 +2,91 @@ import os
 import streamlit as st
 import google.generativeai as genai
 
-# Initialize the AI model configuration
+# Configure the AI model
 def configure_gemini():
     genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
     return genai.GenerativeModel(model_name="gemini-1.5-flash-latest", generation_config={"max_output_tokens": 2048})
 
-# Function to initialize the conversation and session state
+# Initialize conversation and session states
 def initialize_state(num_sections, include_table, include_conclusion):
     if 'convo' not in st.session_state:
         model = configure_gemini()
         st.session_state['convo'] = model.start_chat(history=[])
-        st.session_state['blog_parts'] = {'intro': None}
-        st.session_state['current_part'] = 'intro'
         
-        # Configure parts dynamically based on user input
-        for i in range(1, num_sections + 1):
-            st.session_state['blog_parts'][f'main_content_{i}'] = None
-        if include_table:
-            st.session_state['blog_parts']['table'] = None
-        st.session_state['blog_parts']['faqs'] = None
-        if include_conclusion:
-            st.session_state['blog_parts']['conclusion'] = None
+        # Define blog structure based on customization
+        st.session_state['blog_parts'] = {
+            'intro': None,
+            **{f'main_content_{i}': None for i in range(1, num_sections + 1)},
+            'table': None if not include_table else None,
+            'faqs': None,
+            'conclusion': None if not include_conclusion else None
+        }
+        st.session_state['current_part'] = 'intro'
 
-# Enhanced prompt generation for SEO and human-like language
+# Generate human-friendly, SEO-focused prompts
 def generate_prompt(current_part, blog_topic, blog_tone, blog_language):
     prompts = {
-        'intro': f"Craft a captivating introduction for a {blog_language} blog post on '{blog_topic}' that’s SEO-optimized. Hook readers, provide a quick preview of what’s to come, and make it relatable to a reader looking for useful insights.",
-        'main_content': f"Write a main section for the blog post on '{blog_topic}' in {blog_language}. Start with a clear, SEO-friendly subheading and write in a {blog_tone} tone, including engaging details and examples to draw the reader in.",
-        'table': f"Create a well-organized table summarizing key points about '{blog_topic}'. Use a simple structure, add comparisons, or present essential statistics for easy reference.",
-        'faqs': f"Write an FAQ section on '{blog_topic}' with SEO keywords in the questions. Provide concise answers in a {blog_tone} tone, and keep answers to 2-3 sentences for readability.",
-        'conclusion': f"Write a thoughtful conclusion for the blog on '{blog_topic}'. Summarize the main points and offer a call-to-action, leaving readers with something to remember or act upon."
+        'intro': f"Write a friendly and engaging intro for a {blog_language} blog on '{blog_topic}'. Get the reader interested and give a quick overview of what they’ll learn.",
+        'main_content': f"Write a main section for a blog post on '{blog_topic}' in {blog_language}. Use clear subheadings, keep a {blog_tone} tone, and add helpful details and examples.",
+        'table': f"Create a simple table for '{blog_topic}' that highlights key points, comparisons, or interesting stats. Make it easy to read and useful.",
+        'faqs': f"Create an FAQ for '{blog_topic}' with common questions. Keep answers short and use a {blog_tone} tone.",
+        'conclusion': f"Write a friendly conclusion for the blog on '{blog_topic}'. Summarize main points and encourage readers to take action or remember key insights."
     }
 
     if current_part.startswith('main_content'):
-        section_number = current_part.split('_')[-1]
-        return f"{prompts['main_content']} This is section {section_number}."
+        section_num = current_part.split('_')[-1]
+        return f"{prompts['main_content']} This is section {section_num}."
+
     return prompts[current_part]
 
-# Function to generate each blog section
+# Generate each blog section with proper sequence
 def generate_blog_section(blog_topic, blog_tone, blog_language):
     convo = st.session_state['convo']
     current_part = st.session_state['current_part']
     
-    # Generate prompt and get response
+    # Prompt and generate content
     prompt = generate_prompt(current_part, blog_topic, blog_tone, blog_language)
-    
-    # Use spinner to indicate generation in progress
     with st.spinner(f"Generating {current_part.replace('_', ' ').title()}..."):
         convo.send_message(prompt)
         response = convo.last.text
-    
-    # Store generated content and update the current part
+
+    # Store generated part and update sequence
     st.session_state['blog_parts'][current_part] = response
     parts_list = list(st.session_state['blog_parts'].keys())
     next_index = parts_list.index(current_part) + 1
-    
-    # Ensure next part exists, otherwise mark as complete
     st.session_state['current_part'] = parts_list[next_index] if next_index < len(parts_list) else 'complete'
+    
     return response
 
 # Main app function
 def main():
-    st.set_page_config(page_title="SEO-Friendly AI Blog Generator", layout="wide")
-    st.title("SEO-Friendly AI Blog Generator")
-    st.markdown("Generate an engaging, customizable blog in SEO-optimized sections.")
+    st.set_page_config(page_title="Human-Friendly AI Blog Generator", layout="wide")
+    st.title("Human-Friendly AI Blog Generator")
+    st.markdown("Create an SEO-friendly, reader-focused blog in easy-to-read sections.")
 
-    # Input for blog topic and customization options
-    blog_topic = st.text_input("Enter the main topic of your blog:")
-    blog_tone = st.selectbox('Blog Tone', ['Professional', 'Casual', 'Formal'])
-    blog_language = st.selectbox('Language', ['English', 'Spanish', 'Chinese', 'Hindi', 'Vietnamese'])
-
-    # Customization options for sections
-    num_sections = st.slider("Number of Main Sections", min_value=1, max_value=5, value=3)
-    include_table = st.checkbox("Include Table")
-    include_conclusion = st.checkbox("Include Conclusion")
+    # User input for blog topic and customization
+    blog_topic = st.text_input("Enter your blog topic:")
+    blog_tone = st.selectbox("Choose the blog tone", ["Friendly", "Informative", "Conversational"])
+    blog_language = st.selectbox("Choose the blog language", ["English", "Spanish", "Chinese", "Hindi", "Vietnamese"])
     
+    # Options for customizing the blog structure
+    num_sections = st.slider("Number of Main Sections", min_value=1, max_value=5, value=3)
+    include_table = st.checkbox("Include a Table Section")
+    include_conclusion = st.checkbox("Include a Conclusion Section")
+
     if st.button('Generate Blog'):
         if blog_topic:
             initialize_state(num_sections, include_table, include_conclusion)
-            st.success('Blog generation started! Please wait as each section is generated.')
+            st.success('Blog generation started! Generating sections one by one.')
 
-            # Sequential generation of blog sections
+            # Sequentially generate each section
             while 'convo' in st.session_state and st.session_state['current_part'] != 'complete':
                 part_content = generate_blog_section(blog_topic, blog_tone, blog_language)
                 st.subheader(st.session_state['current_part'].replace("_", " ").title())
                 st.write(part_content)
             
-            st.success("All parts of the blog have been generated!")
+            # Display the final blog
+            st.success("Your blog is ready!")
             st.subheader("Complete Blog Post")
             complete_blog = "\n\n".join(part for part in st.session_state['blog_parts'].values() if part)
             st.write(complete_blog)
