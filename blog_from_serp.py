@@ -66,8 +66,9 @@ def generate_blog_section(blog_topic, blog_type, blog_tone, blog_language):
         """
     
     # Send the prompt to the AI model
-    convo.send_message(prompt)
-    response = convo.last.text
+    with st.spinner("Generating content..."):
+        convo.send_message(prompt)
+        response = convo.last.text
 
     # Store the generated part in session state
     st.session_state['blog_parts'][current_part] = response
