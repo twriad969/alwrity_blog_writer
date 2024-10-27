@@ -15,7 +15,7 @@ def initialize_state(num_sections, include_table, include_conclusion):
         st.session_state['blog_parts'] = {'intro': None}
         st.session_state['current_part'] = 'intro'
         
-        # Configure the parts to generate based on user inputs
+        # Configure parts dynamically based on user input
         for i in range(1, num_sections + 1):
             st.session_state['blog_parts'][f'main_content_{i}'] = None
         if include_table:
@@ -24,48 +24,55 @@ def initialize_state(num_sections, include_table, include_conclusion):
         if include_conclusion:
             st.session_state['blog_parts']['conclusion'] = None
 
-# Function to generate each blog section with enhanced prompts
+# Enhanced prompt generation for SEO and human-like language
+def generate_prompt(current_part, blog_topic, blog_tone, blog_language):
+    prompts = {
+        'intro': f"Craft a captivating introduction for a {blog_language} blog post on '{blog_topic}' that’s SEO-optimized. Hook readers, provide a quick preview of what’s to come, and make it relatable to a reader looking for useful insights.",
+        'main_content': f"Write a main section for the blog post on '{blog_topic}' in {blog_language}. Start with a clear, SEO-friendly subheading and write in a {blog_tone} tone, including engaging details and examples to draw the reader in.",
+        'table': f"Create a well-organized table summarizing key points about '{blog_topic}'. Use a simple structure, add comparisons, or present essential statistics for easy reference.",
+        'faqs': f"Write an FAQ section on '{blog_topic}' with SEO keywords in the questions. Provide concise answers in a {blog_tone} tone, and keep answers to 2-3 sentences for readability.",
+        'conclusion': f"Write a thoughtful conclusion for the blog on '{blog_topic}'. Summarize the main points and offer a call-to-action, leaving readers with something to remember or act upon."
+    }
+
+    if current_part.startswith('main_content'):
+        section_number = current_part.split('_')[-1]
+        return f"{prompts['main_content']} This is section {section_number}."
+    return prompts[current_part]
+
+# Function to generate each blog section
 def generate_blog_section(blog_topic, blog_tone, blog_language):
     convo = st.session_state['convo']
     current_part = st.session_state['current_part']
     
-    # Refined prompts based on the section
-    if current_part == 'intro':
-        prompt = f"Write a captivating introduction for a {blog_language} blog post on the topic '{blog_topic}'. This intro should hook readers and be inviting in tone."
-    elif current_part.startswith('main_content'):
-        section_num = current_part.split('_')[-1]
-        prompt = f"Write section {section_num} for '{blog_topic}' in {blog_language}. Make it informative and engaging in a {blog_tone} tone."
-    elif current_part == 'table':
-        prompt = f"Create a simple table summarizing key points about '{blog_topic}' in {blog_language}. This table should be easy to read, possibly featuring comparisons or stats."
-    elif current_part == 'faqs':
-        prompt = f"Write a FAQ section for '{blog_topic}' with brief, {blog_tone}-style answers to common questions."
-    elif current_part == 'conclusion':
-        prompt = f"Write a friendly conclusion for the blog on '{blog_topic}', summarizing the main takeaways with a call-to-action."
-
-    # Generate response with spinner
+    # Generate prompt and get response
+    prompt = generate_prompt(current_part, blog_topic, blog_tone, blog_language)
+    
+    # Use spinner to indicate generation in progress
     with st.spinner(f"Generating {current_part.replace('_', ' ').title()}..."):
         convo.send_message(prompt)
         response = convo.last.text
     
-    # Store response and update the current part
+    # Store generated content and update the current part
     st.session_state['blog_parts'][current_part] = response
-    next_part = list(st.session_state['blog_parts'].keys())[list(st.session_state['blog_parts'].keys()).index(current_part) + 1]
-    st.session_state['current_part'] = next_part if next_part else 'complete'
-
+    parts_list = list(st.session_state['blog_parts'].keys())
+    next_index = parts_list.index(current_part) + 1
+    
+    # Ensure next part exists, otherwise mark as complete
+    st.session_state['current_part'] = parts_list[next_index] if next_index < len(parts_list) else 'complete'
     return response
 
 # Main app function
 def main():
-    st.set_page_config(page_title="Customizable AI Blog Generator", layout="wide")
-    st.title("Customizable AI Blog Generator")
-    st.markdown("Generate an engaging blog in configurable sections. Powered by generative AI.")
+    st.set_page_config(page_title="SEO-Friendly AI Blog Generator", layout="wide")
+    st.title("SEO-Friendly AI Blog Generator")
+    st.markdown("Generate an engaging, customizable blog in SEO-optimized sections.")
 
     # Input for blog topic and customization options
     blog_topic = st.text_input("Enter the main topic of your blog:")
     blog_tone = st.selectbox('Blog Tone', ['Professional', 'Casual', 'Formal'])
     blog_language = st.selectbox('Language', ['English', 'Spanish', 'Chinese', 'Hindi', 'Vietnamese'])
 
-    # Customization options
+    # Customization options for sections
     num_sections = st.slider("Number of Main Sections", min_value=1, max_value=5, value=3)
     include_table = st.checkbox("Include Table")
     include_conclusion = st.checkbox("Include Conclusion")
@@ -75,7 +82,7 @@ def main():
             initialize_state(num_sections, include_table, include_conclusion)
             st.success('Blog generation started! Please wait as each section is generated.')
 
-            # Generate each blog section sequentially
+            # Sequential generation of blog sections
             while 'convo' in st.session_state and st.session_state['current_part'] != 'complete':
                 part_content = generate_blog_section(blog_topic, blog_tone, blog_language)
                 st.subheader(st.session_state['current_part'].replace("_", " ").title())
@@ -83,7 +90,7 @@ def main():
             
             st.success("All parts of the blog have been generated!")
             st.subheader("Complete Blog Post")
-            complete_blog = "\n\n".join(st.session_state['blog_parts'].values())
+            complete_blog = "\n\n".join(part for part in st.session_state['blog_parts'].values() if part)
             st.write(complete_blog)
 
 if __name__ == "__main__":
