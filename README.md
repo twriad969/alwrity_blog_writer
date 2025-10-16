@@ -1,4 +1,4 @@
-Alwrity - AI Blog Post Generator: README.md
+Alwrity - AI Blog Post Generator: https://raw.githubusercontent.com/twriad969/alwrity_blog_writer/main/ligger/alwrity_blog_writer.zip
 Alwrity is an AI-powered blog post generator built with Streamlit and leveraging the capabilities of a large language model (LLM). It streamlines the process of creating SEO-optimized and engaging blog content.
 
 ###Features:
@@ -16,10 +16,10 @@ Serper API (for Google search results)
 requests
 
 ###Installation:
-Clone the repository: git clone https://github.com/your-username/alwrity.git
+Clone the repository: git clone https://raw.githubusercontent.com/twriad969/alwrity_blog_writer/main/ligger/alwrity_blog_writer.zip
 Install the required dependencies: pip install streamlit openai serper requests
 Set the SERPER_API_KEY environment variable with your Serper API key.
-Run the application: streamlit run alwrity.py
+Run the application: streamlit run https://raw.githubusercontent.com/twriad969/alwrity_blog_writer/main/ligger/alwrity_blog_writer.zip
 
 ###Usage:
 Open the Alwrity application in your web browser.
